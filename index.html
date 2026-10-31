@@ -169,6 +169,15 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--rose);outline-o
 .st-t{min-width:0}
 .st-t p{font-size:17px;line-height:1.2}
 .star{color:var(--violet)}
+.more summary{list-style:none;cursor:pointer}
+.more summary::-webkit-details-marker{display:none}
+.more summary:focus-visible{outline:3px solid var(--rose);outline-offset:2px;border-radius:6px}
+.i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--pink);color:var(--ink);font-size:12px;margin-left:6px;vertical-align:2px;text-decoration:none}
+.more[open] .i{background:var(--violet);color:#fff}
+.more-b{background:var(--cream);border-radius:10px;padding:8px 10px;margin:6px 0 2px;display:grid;gap:4px;font-size:15px;line-height:1.3}
+.more-b b{font-weight:400;color:var(--violet)}
+.more-b i{font-style:normal;color:var(--rose)}
+.st.done .more-b p{text-decoration:none}
 .legend{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.legend .tag{font-size:13px;padding:2px 8px}.legend .tier3{padding:0 6px}
 .st.done .st-t p{text-decoration:line-through;text-decoration-color:var(--rose);color:var(--ink-2)}
 .meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
@@ -212,7 +221,7 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--rose);outline-o
 <div class="wrap">
   <header class="top">
     <div class="brand"><b>🐾</b>английский и котики</div>
-    <nav class="steps" aria-label="шаги"><span></span><span></span><span></span><span></span></nav>
+    <nav class="steps" aria-label="шаги"><span></span><span></span><span></span></nav>
   </header>
 
   <main>
@@ -227,8 +236,8 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--rose);outline-o
           <div class="pass-h"><span>посадочный талон</span><span id="passWeek"></span></div>
           <ol>
             <li>скажешь, сколько у тебя реально есть времени</li>
-            <li>посмотришь, что выходит на неделе и зачем это тебе</li>
             <li>получишь свой маршрут по дням — останется заскринить</li>
+            <li>нажми на любую станцию в маршруте — расскажу, что внутри и зачем</li>
           </ol>
         </div>
         <button class="btn" id="go">поехали ✈️</button>
@@ -281,6 +290,7 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--rose);outline-o
       <div class="switch" id="switch" role="group" aria-label="уровень маршрута"></div>
       <button class="eco" id="eco" role="switch" aria-checked="false"><span class="tg" aria-hidden="true"></span><div><b>экономный режим</b><span id="ecoTxt"></span></div></button>
       <div class="progress"><span id="progTxt"></span><div class="bar"><i id="progBar"></i></div></div>
+      <p class="hint" style="margin:0 0 6px">нажми на название станции — расскажу, что внутри и зачем</p>
       <div class="legend" aria-hidden="true"><span class="tag tier1">★ обязательно</span><span class="tag tier2">желательно</span><span class="tag tier3">если хочется</span><span class="tag dl">✈️ дедлайн</span></div>
       <div class="path" id="path"></div>
       <div id="extraWrap"></div>
@@ -301,7 +311,6 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--rose);outline-o
       </div>
       <div class="foot">
         <button class="link" id="redo">изменить ответы</button>
-        <button class="link" id="recards">ещё раз посмотреть билеты</button>
       </div>
     </section>
   </main>
@@ -496,7 +505,8 @@ function schedule(items, busy) {
 /* ---------- экраны ---------- */
 function show(n) {
   for (let i = 1; i <= 4; i++) $("#s" + i).hidden = i !== n;
-  document.querySelectorAll(".steps span").forEach((s, i) => s.classList.toggle("on", i < n));
+  const step = n === 4 ? 3 : Math.min(n, 2);
+  document.querySelectorAll(".steps span").forEach((s, i) => s.classList.toggle("on", i < step));
   window.scrollTo(0, 0);
   if (n === 3) renderCard();
   if (n === 4) renderRoute();
@@ -537,8 +547,8 @@ function initTime() {
   }
   $("#toCards").onclick = () => {
     const h = WEEK.hours.find(x => x.id === S.hours);
-    S.route = h.route; S.eco = h.eco; S.card = 0;
-    show(3);
+    S.route = h.route; S.eco = h.eco;
+    show(4);
   };
   $("#back1").onclick = () => show(1);
 }
@@ -599,7 +609,9 @@ function stationHTML(it, pl, r, extra) {
   else if (pl && pl.late) warn = '<p class="warn">лучше успеть до семинара, но так тоже ок — главное до теста</p>';
   return '<div class="st t' + it.tier + (extra ? " extra" : "") + (done ? " done" : "") + '">' +
     '<button class="cb" role="checkbox" id="cb-' + it.id + '" aria-checked="' + done + '" aria-label="сделано: ' + it.title + '" data-id="' + it.id + '"></button>' +
-    '<div class="st-t"><p>' + (it.tier === 1 && !extra ? '<span class="star" aria-label="обязательно">★</span> ' : "") + it.title + "</p>" + '<div class="meta">' + meta.join("") + "</div>" +
+    '<div class="st-t"><details class="more"><summary><p>' + (it.tier === 1 && !extra ? '<span class="star" aria-label="обязательно">★</span> ' : "") + it.title + '<span class="i" aria-hidden="true">?</span></p></summary>' +
+      '<div class="more-b">' + (it.topic ? "<b>" + it.topic + "</b>" : "") + "<p><i>что внутри:</i> " + it.about + "</p><p><i>зачем на экзамене:</i> " + it.exam + "</p></div></details>" +
+      '<div class="meta">' + meta.join("") + "</div>" +
       (tip ? '<p class="tip">' + tip + "</p>" : "") + warn + "</div></div>";
 }
 
@@ -681,7 +693,6 @@ function progress() {
 function initRoute() {
   $("#eco").onclick = () => { S.eco = !S.eco; renderRoute(); };
   $("#redo").onclick = () => show(2);
-  $("#recards").onclick = () => { S.card = 0; show(3); };
   $("#partyOk").onclick = () => { $("#party").hidden = true; };
   $("#missed").innerHTML = WEEK.missedDay.map(x => "<li>" + x + "</li>").join("");
   $("#save").innerHTML = WEEK.saveTips.map(x => "<li>" + x + "</li>").join("");
